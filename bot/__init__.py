@@ -5,10 +5,8 @@ import threading
 from telegram.ext import Updater
 import os
 
-
-if os.path.exists('log.txt'):
-    with open('log.txt', 'r+') as f:
-        f.truncate(0)
+with open('log.txt', 'r+') as f:
+    f.truncate(0)
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler('log.txt'), logging.StreamHandler()],

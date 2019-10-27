@@ -47,7 +47,6 @@ class MirrorListener(listeners.MirrorListeners):
         name = pathlib.PurePath(path).name
         with download_dict_lock:
             download_dict[self.uid].is_archiving = False
-            LOGGER.info(f"Upload Name : {name}")
             download_dict[self.uid].upload_name = name
         gdrive = gdriveTools.GoogleDriveHelper(self)
         with download_dict_lock:
@@ -68,12 +67,7 @@ class MirrorListener(listeners.MirrorListeners):
             except KeyError:
                 pass
         with download_dict_lock:
-            LOGGER.info(f"Deleting {progress_status_list[index].name()} from download_dict.")
-            try:
-               del download_dict[self.uid]
-            except KeyError as e:
-                LOGGER.info(str(e))
-                pass   
+            del download_dict[self.uid]
         try:
             fs_utils.clean_download(progress_status_list[index].path())
         except FileNotFoundError:
@@ -85,19 +79,17 @@ class MirrorListener(listeners.MirrorListeners):
         pass
 
     def onUploadComplete(self, link: str, progress_status_list: list, index: int):
-        msg = f'<a href="{link}">{progress_status_list[index].name()}</a> ({progress_status_list[index].size()})'
+        msg = f'<a href="{link}">{progress_status_list[index].name()}</a>'
         with download_dict_lock:
             del download_dict[self.message.message_id]
         try:
             deleteMessage(self.context, self.reply_message)
             with status_reply_dict_lock:
                 del status_reply_dict[self.update.effective_chat.id]
-        except BadRequest as e:
-        	LOGGER.error(str(e))
+        except BadRequest:
             # This means that the message has been deleted because of a /status command
             pass
-        except KeyError as e:
-        	LOGGER.error(str(e))
+        except KeyError:
             pass
         sendMessage(msg, self.context, self.update)
         try:
