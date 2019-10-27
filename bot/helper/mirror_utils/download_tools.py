@@ -12,13 +12,13 @@ class DownloadHelper:
         self.__is_torrent = False
 
     def add_download(self, link: str):
-        if is_url(link):
+        if is_magnet(link):
+            download = aria2.add_magnet(link, {'dir': DOWNLOAD_DIR + str(self.__listener.uid)})
+            self.__is_torrent = True
+        else:
             if link.endswith('.torrent'):
                 self.__is_torrent = True
             download = aria2.add_uris([link], {'dir': DOWNLOAD_DIR + str(self.__listener.uid)})
-        else:
-            download = aria2.add_magnet(link, {'dir': DOWNLOAD_DIR + str(self.__listener.uid)})
-            self.__is_torrent = True
         with download_dict_lock:
             download_dict[self.__listener.message.message_id] = DownloadStatus(download.gid,
                                                                                self.__listener.uid)
@@ -41,24 +41,26 @@ class DownloadHelper:
         should_update = True
         if self.__is_torrent:
             # Waiting for the actual gid
-            new_gid = None
-            while new_gid is None:
-                download = self.__get_download()
+            download = self.__get_download()
+            while download.is_complete != True:  # Check every few seconds
+                status_list = get_download_status_list()
+                index = get_download_index(status_list, self.__get_download().gid)
+                download = self.__get_download()  
                 if download.has_failed:
                     self.__listener.onDownloadError(download.error_message, status_list, index)
                     return
                 if download.is_paused:
                     self.__listener.onDownloadError("Download cancelled manually by user", status_list, index)
                     return
-                sleep(DOWNLOAD_STATUS_UPDATE_INTERVAL)
                 if should_update:
                     try:
                         self.__listener.onDownloadProgress(get_download_status_list(), index)
                     except KillThreadException:
                         should_update = False
-                        # Check every few seconds
-                new_gid = self.__get_followed_download_gid()
+                    sleep(DOWNLOAD_STATUS_UPDATE_INTERVAL)        
+            new_gid = self.__get_followed_download_gid()
             with download_dict_lock:
+                LOGGER.info(f"{download.name}: Changing GID {download.gid} to {new_gid}")
                 download_dict[self.__listener.message.message_id] = DownloadStatus(new_gid,
                                                                                self.__listener.message.message_id)
 
@@ -66,6 +68,8 @@ class DownloadHelper:
         previous = None
         download = self.__get_download()
         while not download.is_complete:
+            status_list = get_download_status_list()
+            index = get_download_index(status_list, self.__get_download().gid)
             if download.has_failed:
                 self.__listener.onDownloadError(self.__get_download().error_message, status_list, index)
                 return
@@ -73,8 +77,6 @@ class DownloadHelper:
                 self.__listener.onDownloadError("Download has been canceled", status_list, index)
                 return
             if should_update:
-                status_list = get_download_status_list()
-                index = get_download_index(status_list, self.__get_download().gid)
                 # TODO: Find a better way to differentiate between 2 list of objects
                 progress_str_list = get_download_str()
                 if progress_str_list != previous:
@@ -83,7 +85,7 @@ class DownloadHelper:
                     except KillThreadException:
                         should_update = False
                     previous = progress_str_list
+                    sleep(DOWNLOAD_STATUS_UPDATE_INTERVAL)
             download = self.__get_download()
-            sleep(DOWNLOAD_STATUS_UPDATE_INTERVAL)
 
         self.__listener.onDownloadComplete(status_list, index)
