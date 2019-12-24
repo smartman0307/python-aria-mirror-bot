@@ -94,7 +94,7 @@ class MirrorListener(listeners.MirrorListeners):
             share_url = f'{INDEX_URL}/{download_dict[self.uid].name()}'
             share_url = share_url.replace(' ', '%20')
             if INDEX_URL is not None:
-                msg += f'\n\n Shareable link: <a href="{share_url}/">here</a>'
+                msg += f'\n\n Shareable link: <a href="{share_url}">here</a>'
 
         if len(download_dict) == 0:
             self.clean()
