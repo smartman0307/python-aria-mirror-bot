@@ -106,20 +106,8 @@ Note: 1 service account can copy around 750gb a day, 1 project makes 100 service
 `python3 gen_sa_accounts.py --quick-setup 1 --new-only`
 
 A folder named accounts will be created which will contain keys for the service accounts created
+
+NOTE: If you have created SAs in past from this script, you can also just re download the keys by running:
 ```
-We highly recommend to zip this folder and store it somewhere safe, so that you do not have to create a new project everytime you want to deploy the bot
-
-**However** If you lose it anyway, you can redownload it by running script:
-python3 download_service_accounts.py project_id
+python3 gen_sa_accounts.py --download-keys project_id
 ```
-### Adding service accounts to Google Groups:
-We use Google Groups to manager our service accounts considering the  
-[Official limits to the members of Team Drive](https://support.google.com/a/answer/7338880?hl=en) (Limit for individuals and groups directly added as members: 600).
-
-1. Turn on the Directory API following [official steps](https://developers.google.com/admin-sdk/directory/v1/quickstart/python) (save the generated json file to folder `credentials`).
-
-2. Create group for your organization [in the Admin console](https://support.google.com/a/answer/33343?hl=en). After create a group, you will have an address for example`sa@yourdomain.com`.
-
-3. Run `python3 add_to_google_group.py -g sa@yourdomain.com`
-
-4. Now, add Google Groups (**Step 2**) to manager your service accounts, add the group address `sa@yourdomain.com` or `sa@googlegroups.com` to the Team drive or folder
