@@ -4,11 +4,10 @@ from bot import DOWNLOAD_DIR
 
 
 class UploadStatus(Status):
-    def __init__(self, obj, size, listener):
+    def __init__(self, obj, size, uid):
         self.obj = obj
         self.__size = size
-        self.uid = listener.uid
-        self.message = listener.message
+        self.uid = uid
 
     def path(self):
         return f"{DOWNLOAD_DIR}{self.uid}"

@@ -4,7 +4,6 @@ import shutil
 import os
 import pathlib
 import magic
-import tarfile
 
 
 def clean_download(path: str):
@@ -30,25 +29,13 @@ def exit_clean_up(signal, frame):
         LOGGER.warning("Force Exiting before the cleanup finishes!")
         sys.exit(1)
 
-def get_path_size(path):
-    if os.path.isfile(path):
-        return os.path.getsize(path)
-    total_size = 0
-    for root, dirs, files in os.walk(path):
-        for f in files:
-            abs_path = os.path.join(root, f)
-            total_size += os.path.getsize(abs_path)
-    return total_size
 
-
-def tar(org_path):
-    tar_path = org_path + ".tar"
-    path = pathlib.PurePath(org_path)
-    LOGGER.info(f'Tar: orig_path: {org_path}, tar_path: {tar_path}')
-    tar = tarfile.open(tar_path, "w")
-    tar.add(org_path, arcname=path.name)
-    tar.close()
-    return tar_path
+def tar(orig_path: str):
+    path = pathlib.PurePath(orig_path)
+    base = path.name
+    root = pathlib.Path(path.parent.as_posix()).absolute().as_posix()
+    LOGGER.info(f'Tar: orig_path: {orig_path}, base: {base}, root: {root}')
+    return shutil.make_archive(orig_path, 'tar', root, base)
 
 
 def get_mime_type(file_path):
