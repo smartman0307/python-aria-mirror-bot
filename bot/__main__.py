@@ -1,10 +1,9 @@
-import shutil, psutil
+import shutil
 import signal
 import pickle
 
 from os import execl, path, remove
 from sys import executable
-import time
 
 from telegram.ext import CommandHandler, run_async
 from bot import dispatcher, updater, botStartTime
@@ -23,24 +22,17 @@ def stats(update, context):
     total = get_readable_file_size(total)
     used = get_readable_file_size(used)
     free = get_readable_file_size(free)
-    cpuUsage = psutil.cpu_percent(interval=0.5)
-    memory = psutil.virtual_memory().percent
     stats = f'Bot Uptime: {currentTime}\n' \
             f'Total disk space: {total}\n' \
             f'Used: {used}\n' \
-            f'Free: {free}\n' \
-            f'CPU: {cpuUsage}%\n' \
-            f'RAM: {memory}%'
+            f'Free: {free}'
     sendMessage(stats, context.bot, update)
 
 
 @run_async
 def start(update, context):
-    start_string = f'''
-This is a bot which can mirror all your links to Google drive!
-Type /{BotCommands.HelpCommand} to get a list of available commands
-'''
-    sendMessage(start_string, context.bot, update)
+    sendMessage("This is a bot which can mirror all your links to Google drive!\n"
+                "Type /help to get a list of available commands", context.bot, update)
 
 
 @run_async
@@ -72,8 +64,6 @@ def bot_help(update, context):
 /{BotCommands.HelpCommand}: To get this message
 
 /{BotCommands.MirrorCommand} [download_url][magnet_link]: Start mirroring the link to google drive
-
-/{BotCommands.UnzipMirrorCommand} [download_url][magnet_link] : starts mirroring and if downloaded file is any archive , extracts it to google drive
 
 /{BotCommands.TarMirrorCommand} [download_url][magnet_link]: start mirroring and upload the archived (.tar) version of the download
 

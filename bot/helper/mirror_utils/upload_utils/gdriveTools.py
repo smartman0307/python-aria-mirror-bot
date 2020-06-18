@@ -289,32 +289,46 @@ class GoogleDriveHelper:
         msg = ""
         LOGGER.info(f"File ID: {file_id}")
         try:
-            meta = self.getFileMetadata(file_id)
-            if meta.get("mimeType") == self.__G_DRIVE_DIR_MIME_TYPE:
-                dir_id = self.create_directory(meta.get('name'), parent_id)
+            meta = self.__service.files().get(supportsAllDrives=True, fileId=file_id,
+                                              fields="name,id,mimeType,size").execute()
+        except Exception as e:
+            return f"{str(e).replace('>', '').replace('<', '')}"
+        if meta.get("mimeType") == self.__G_DRIVE_DIR_MIME_TYPE:
+            dir_id = self.create_directory(meta.get('name'), parent_id)
+            try:
                 result = self.cloneFolder(meta.get('name'), meta.get('name'), meta.get('id'), dir_id)
-                msg += f'<a href="{self.__G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(dir_id)}">{meta.get("name")}</a>' \
-                        f' ({get_readable_file_size(self.transferred_size)})'
-                if INDEX_URL is not None:
-                    url = requests.utils.requote_uri(f'{INDEX_URL}/{meta.get("name")}/')
-                    msg += f' | <a href="{url}"> Index URL</a>'
-            else:
+            except Exception as e:
+                if isinstance(e, RetryError):
+                    LOGGER.info(f"Total Attempts: {e.last_attempt.attempt_number}")
+                    err = e.last_attempt.exception()
+                else:
+                    err = str(e).replace('>', '').replace('<', '')
+                LOGGER.error(err)
+                return err
+            msg += f'<a href="{self.__G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(dir_id)}">{meta.get("name")}</a>' \
+                   f' ({get_readable_file_size(self.transferred_size)})'
+            if INDEX_URL is not None:
+                url = requests.utils.requote_uri(f'{INDEX_URL}/{meta.get("name")}/')
+                msg += f' | <a href="{url}"> Index URL</a>'
+        else:
+            try:
                 file = self.copyFile(meta.get('id'), parent_id)
-                msg += f'<a href="{self.__G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))}">{file.get("name")}</a>'
-                try:
-                    msg += f' ({get_readable_file_size(int(meta.get("size")))}) '
-                except TypeError:
-                    pass
+            except Exception as e:
+                if isinstance(e, RetryError):
+                    LOGGER.info(f"Total Attempts: {e.last_attempt.attempt_number}")
+                    err = e.last_attempt.exception()
+                else:
+                    err = str(e).replace('>', '').replace('<', '')
+                LOGGER.error(err)
+                return err
+            msg += f'<a href="{self.__G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))}">{file.get("name")}</a>'
+            try:
+                msg += f' ({get_readable_file_size(int(meta.get("size")))}) '
                 if INDEX_URL is not None:
-                        url = requests.utils.requote_uri(f'{INDEX_URL}/{file.get("name")}')
-                        msg += f' | <a href="{url}"> Index URL</a>'
-        except Exception as err:
-            if isinstance(err, RetryError):
-                LOGGER.info(f"Total Attempts: {err.last_attempt.attempt_number}")
-                err = err.last_attempt.exception()
-            err = str(err).replace('>', '').replace('<', '')
-            LOGGER.error(err)
-            return err
+                    url = requests.utils.requote_uri(f'{INDEX_URL}/{file.get("name")}')
+                    msg += f' | <a href="{url}"> Index URL</a>'
+            except TypeError:
+                pass
         return msg
 
     def cloneFolder(self, name, local_path, folder_id, parent_id):
