@@ -9,12 +9,9 @@ from bot import bot
 
 
 def sendMessage(text: str, bot, update: Update):
-    try:
-        return bot.send_message(update.message.chat_id,
+    return bot.send_message(update.message.chat_id,
                             reply_to_message_id=update.message.message_id,
                             text=text, parse_mode='HTMl')
-    except Exception as e:
-        LOGGER.error(str(e))
 
 
 def editMessage(text: str, message: Message):
@@ -22,8 +19,9 @@ def editMessage(text: str, message: Message):
         bot.edit_message_text(text=text, message_id=message.message_id,
                               chat_id=message.chat.id,
                               parse_mode='HTMl')
-    except Exception as e:
+    except TimedOut as e:
         LOGGER.error(str(e))
+        pass
 
 
 def deleteMessage(bot, message: Message):
@@ -58,8 +56,10 @@ def delete_all_messages():
             try:
                 deleteMessage(bot, message)
                 del status_reply_dict[message.chat.id]
-            except Exception as e:
-                LOGGER.error(str(e))
+            except BadRequest as e:
+                LOGGER.info(str(e))
+                del status_reply_dict[message.chat.id]
+                pass
 
 
 def update_all_messages():
@@ -69,7 +69,7 @@ def update_all_messages():
             if status_reply_dict[chat_id] and msg != status_reply_dict[chat_id].text:
                 try:
                     editMessage(msg, status_reply_dict[chat_id])
-                except Exception as e:
+                except BadRequest as e:
                     LOGGER.error(str(e))
                 status_reply_dict[chat_id].text = msg
 
